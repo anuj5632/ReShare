@@ -10,11 +10,8 @@ ReShare is a full-stack system designed to connect donors, NGOs, and volunteers 
 - [4. Installation](#4-installation)
 - [5. Environment Variables](#5-environment-variables)
 - [6. Project Structure](#6-project-structure)
-- [7. Database Structure](#7-database-structure)
-- [8. Notification System](#8-notification-system)
-- [9. Future Enhancements](#9-future-enhancements)
-- [10. Contribution Guidelines](#10-contribution-guidelines)
-- [11. License](#11-license)
+
+  
 
 ---
 
@@ -81,3 +78,34 @@ git clone <repository-url>
 cd ReShare
 npm install
 npm run dev
+firebase deploy --only functions
+```
+# Firebase Config
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+
+# Google Maps API
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+
+/
+├── app/<br>
+│   ├── donor/<br>
+│   ├── ngo/<br>
+│   ├── volunteer/<br>
+│   └── admin/<br>
+├── components/<br>
+├── firebase/<br>
+│   ├── config.js<br>
+│   ├── auth.js<br>
+│   └── firestore.js<br>
+├── functions/<br>
+│   └── index.js<br>
+└── public/<br>
+
+
+
+
