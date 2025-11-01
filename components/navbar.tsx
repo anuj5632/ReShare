@@ -45,14 +45,9 @@ export default function Navbar() {
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-4">
             {!signedIn ? (
-              <>
-                <Link href="/login">
-                  <Button variant="outline">Sign In</Button>
-                </Link>
-                <Link href="/signup">
-                  <Button>Get Started</Button>
-                </Link>
-              </>
+              <Link href="/signup">
+                <Button>Get Started</Button>
+              </Link>
             ) : (
               <Button variant="outline" onClick={() => signOutClient()}>Sign Out</Button>
             )}
@@ -78,16 +73,9 @@ export default function Navbar() {
             </Link>
             <div className="flex gap-2 pt-4">
               {!signedIn ? (
-                <>
-                  <Link href="/login" className="flex-1">
-                    <Button variant="outline" className="w-full bg-transparent">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/signup" className="flex-1">
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
-                </>
+                <Link href="/signup" className="flex-1">
+                  <Button className="w-full">Get Started</Button>
+                </Link>
               ) : (
                 <Button className="w-full" onClick={() => signOutClient()}>Sign Out</Button>
               )}
