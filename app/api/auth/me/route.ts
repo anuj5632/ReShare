@@ -38,10 +38,10 @@ export async function GET() {
       }
     } else if (user.role === 'VOLUNTEER') {
       // Add volunteer-specific data if needed
-      const volunteerStats = await (prisma as any).task.aggregate({
+      const volunteerStats = await prisma.task.aggregate({
         where: { 
           volunteerId: user.id,
-          status: 'COMPLETED'
+          status: 'completed'
         },
         _count: { id: true }
       })

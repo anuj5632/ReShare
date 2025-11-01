@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Package, Users, TrendingUp, Clock, MapPin } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -21,6 +22,8 @@ export default function NGODashboard() {
   const [donations, setDonations] = useState<any[]>([])
   const { toast } = useToast()
   const lastCount = useRef<number>(0)
+  const lastApplicationCount = useRef<number>(0)
+  const lastApplicationIds = useRef<Set<number>>(new Set())
 
   // simple polling so NGO dashboard sees new donations shortly after donors post them
   useEffect(() => {
@@ -49,36 +52,102 @@ export default function NGODashboard() {
     return () => { mounted = false; if (timer) clearInterval(timer) }
   }, [])
 
+  const fetchApplications = async () => {
+    try {
+      const res = await fetch('/api/ngo/portal', { credentials: 'same-origin' })
+      if (!res.ok) {
+        console.error('NGO Dashboard: Failed to fetch applications', { status: res.status, statusText: res.statusText })
+        return []
+      }
+      const data = await res.json()
+      console.log('NGO Dashboard: Fetched applications', { count: data.applications?.length || 0 })
+      return data.applications || []
+    } catch (err) {
+      console.error('NGO Dashboard: Failed to fetch applications:', err)
+      return []
+    }
+  }
+
   useEffect(() => {
     let mounted = true
-    ;(async () => {
-      try {
-  const res = await fetch('/api/ngo/portal', { credentials: 'same-origin' })
-        const data = await res.json()
-        if (!mounted) return
-        setApplications(data.applications || [])
-      } catch (err) {
-        console.error(err)
+    let timer: any = null
+    
+    const loadApplications = async () => {
+      const apps = await fetchApplications()
+      if (!mounted) return
+      
+      // Check for new applications
+      const currentIds = new Set<number>(apps.map((a: App) => a.id))
+      const newApps = apps.filter((a: App) => !lastApplicationIds.current.has(a.id))
+      
+      // Notify about new applications
+      if (lastApplicationIds.current.size > 0 && newApps.length > 0) {
+        const pendingNew = newApps.filter((a: App) => a.status === 'pending')
+        if (pendingNew.length > 0) {
+          toast({ 
+            title: 'New Volunteer Application! 🎉', 
+            description: `${pendingNew.length} new volunteer${pendingNew.length > 1 ? 's' : ''} applied for your tasks`,
+          })
+        }
       }
-    })()
-    return () => { mounted = false }
-  }, [])
+      
+      // Update count for pending applications
+      const pendingCount = apps.filter((a: App) => a.status === 'pending').length
+      if (pendingCount > lastApplicationCount.current && lastApplicationCount.current > 0) {
+        // Only show count increase notification if we're tracking
+      }
+      lastApplicationCount.current = pendingCount
+      lastApplicationIds.current = currentIds
+      
+      setApplications(apps)
+    }
+
+    loadApplications()
+    
+    // Poll for new applications every 10 seconds for faster updates
+    timer = setInterval(loadApplications, 10000)
+    
+    return () => { 
+      mounted = false
+      if (timer) clearInterval(timer)
+    }
+  }, [toast])
 
   const handleDecision = async (id: number, action: 'approve' | 'reject') => {
     try {
-  const res = await fetch('/api/ngo/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicationId: id, action }) })
+      const res = await fetch('/api/ngo/portal', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ applicationId: id, action }),
+        credentials: 'same-origin'
+      })
       const data = await res.json()
-      if (!res.ok) return toast({ title: 'Error', description: data.error || 'Could not update application' })
-      toast({ title: 'Success', description: `Application ${action}d` })
-      setApplications((s) => s.map((a) => a.id === id ? { ...a, status: action === 'approve' ? 'approved' : 'rejected' } : a))
-      // re-fetch donations and applications to reflect changes
-      ;(async () => {
-        try { await fetch('/api/ngo/portal', { credentials: 'same-origin' }) } catch {}
-        try { await fetch('/api/ngo/donations', { credentials: 'same-origin' }) } catch {}
-      })()
+      
+      if (!res.ok) {
+        toast({ 
+          title: 'Error', 
+          description: data.error || 'Could not update application',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      toast({ 
+        title: 'Success', 
+        description: data.message || `Application ${action}d successfully` 
+      })
+      
+      // Refresh applications list to get updated statuses
+      const updatedApps = await fetchApplications()
+      setApplications(updatedApps)
+      
     } catch (err) {
       console.error(err)
-      toast({ title: 'Error', description: 'Could not update application' })
+      toast({ 
+        title: 'Error', 
+        description: 'Could not update application',
+        variant: 'destructive'
+      })
     }
   }
 
@@ -131,6 +200,7 @@ export default function NGODashboard() {
       case "claimed":
         return "bg-amber-100 text-amber-700"
       case "rejected":
+        return "bg-red-100 text-red-700"
       case "in-transit":
         return "bg-blue-100 text-blue-700"
       default:
@@ -188,35 +258,156 @@ export default function NGODashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Volunteer Applications</CardTitle>
-            <CardDescription>People who applied for your tasks</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              Volunteer Applications
+              {(applications || []).filter(a => a.status === 'pending').length > 0 && (
+                <Badge className="bg-amber-500 text-white">
+                  {(applications || []).filter(a => a.status === 'pending').length} New
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Volunteers who applied for your tasks • {(applications || []).filter(a => a.status === 'pending').length} pending approval
+            </CardDescription>
           </div>
-          <Link href="/ngo/claims">
-            <Button variant="outline">View All</Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={async () => {
+              const apps = await fetchApplications()
+              const currentIds = new Set<number>(apps.map((a: App) => a.id))
+              lastApplicationIds.current = currentIds
+              lastApplicationCount.current = apps.filter((a: App) => a.status === 'pending').length
+              setApplications(apps)
+              toast({ title: 'Refreshed', description: 'Applications list updated' })
+            }}
+          >
+            Refresh
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {applications.map((app) => (
-              <div key={app.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{app.volunteer?.name || app.volunteer?.email}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">Applied for: {app.task?.title}</p>
-                </div>
-                <div className="text-right flex flex-col items-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>{app.status}</span>
-                  <div className="flex gap-2">
-                    {app.status === 'pending' && (
-                      <>
-                        <Button size="sm" onClick={() => handleDecision(app.id, 'approve')}>Approve</Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDecision(app.id, 'reject')}>Reject</Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+            {!applications || applications.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                No applications yet. Volunteers will appear here when they apply for your tasks.
               </div>
-            ))}
-            {applications.length === 0 && <div className="text-sm text-muted-foreground">No applications yet.</div>}
+            ) : (
+              <>
+                {/* Show pending applications first */}
+                {applications.filter(a => a.status === 'pending').length > 0 && (
+                  <div className="space-y-4 mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-sm font-semibold text-amber-600">Pending Approval</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {applications.filter(a => a.status === 'pending').length} new
+                      </Badge>
+                    </div>
+                    {applications
+                      .filter(a => a.status === 'pending')
+                      .map((app) => (
+                        <div key={app.id} className="p-4 border-2 border-amber-300 rounded-lg bg-amber-50/30 hover:bg-amber-50/50 transition">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold">{app.volunteer?.name || app.volunteer?.email || 'Unknown Volunteer'}</h3>
+                                <Badge className="bg-amber-500 text-white">New</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                <span className="font-medium">Task:</span> {app.task?.title || 'Unknown Task'}
+                              </p>
+                              {app.task?.date && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium">Scheduled:</span> {new Date(app.task.date).toLocaleDateString()} {app.task.time || ''}
+                                </p>
+                              )}
+                              {app.task?.location && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium">Location:</span> {app.task.location}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Applied: {new Date(app.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right flex flex-col items-end gap-3">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
+                                {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                              </span>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleDecision(app.id, 'approve')}
+                                >
+                                  Approve
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleDecision(app.id, 'reject')}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                
+                {/* Show other applications */}
+                {applications.filter(a => a.status !== 'pending').length > 0 && (
+                  <div className="space-y-4">
+                    {applications.filter(a => a.status !== 'pending').length > 0 && applications.filter(a => a.status === 'pending').length > 0 && (
+                      <div className="flex items-center gap-2 mb-2 pt-4 border-t">
+                        <h3 className="text-sm font-semibold text-muted-foreground">Previous Applications</h3>
+                      </div>
+                    )}
+                    {applications
+                      .filter(a => a.status !== 'pending')
+                      .map((app) => (
+                        <div key={app.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{app.volunteer?.name || app.volunteer?.email || 'Unknown Volunteer'}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                <span className="font-medium">Task:</span> {app.task?.title || 'Unknown Task'}
+                              </p>
+                              {app.task?.date && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium">Scheduled:</span> {new Date(app.task.date).toLocaleDateString()} {app.task.time || ''}
+                                </p>
+                              )}
+                              {app.task?.location && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium">Location:</span> {app.task.location}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Applied: {new Date(app.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right flex flex-col items-end gap-3">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
+                                {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                              </span>
+                              <div className="flex gap-2">
+                                {app.status === 'approved' && (
+                                  <Badge className="bg-green-100 text-green-700">Volunteer Assigned</Badge>
+                                )}
+                                {app.status === 'rejected' && (
+                                  <Badge variant="outline" className="text-muted-foreground">Rejected</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

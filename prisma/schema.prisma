@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int                    @id @default(autoincrement())
+  email        String                 @unique
+  name         String?
+  password     String
+  role         String                 @default("DONOR")
+  meta         String?
+  createdAt    DateTime               @default(now())
+  donations    Donation[]
+  ngos         NGO[]
+  tasks        Task[]
+  applications VolunteerApplication[]
+}
+
+model NGO {
+  id        Int        @id @default(autoincrement())
+  name      String
+  verified  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  // optional account user for the NGO
+  userId    Int?
+  user      User?      @relation(fields: [userId], references: [id])
+  donations Donation[]
+  tasks     Task[]
+}
+
+model Donation {
+  id        Int      @id @default(autoincrement())
+  title     String
+  items     Int      @default(1)
+  status    String   @default("pending")
+  ngoName   String? // snapshot of receiving NGO name
+  donorId   Int
+  donor     User     @relation(fields: [donorId], references: [id])
+  ngoId     Int?
+  ngo       NGO?     @relation(fields: [ngoId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id            Int                     @id @default(autoincrement())
+  title         String
+  ngoId         Int
+  ngo           NGO                     @relation(fields: [ngoId], references: [id])
+  volunteerId   Int?
+  volunteer     User?                   @relation(fields: [volunteerId], references: [id])
+  status        String                  @default("upcoming")
+  date          DateTime?
+  time          String?
+  location      String?
+  createdAt     DateTime                @default(now())
+  registrations VolunteerRegistration[]
+  applications  VolunteerApplication[]
+}
+
+model VolunteerRegistration {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  message   String?
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model VolunteerApplication {
+  id          Int      @id @default(autoincrement())
+  volunteerId Int
+  volunteer   User     @relation(fields: [volunteerId], references: [id])
+  taskId      Int
+  task        Task     @relation(fields: [taskId], references: [id])
+  status      String   @default("pending")
+  message     String?
+  createdAt   DateTime @default(now())
+}

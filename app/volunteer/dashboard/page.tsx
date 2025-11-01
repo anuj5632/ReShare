@@ -2,9 +2,22 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { Users, MapPin, Clock, Award, ArrowRight, Zap } from "lucide-react"
+import { Users, MapPin, Clock, Award, ArrowRight, Zap, Calendar } from "lucide-react"
 import { useEffect, useState } from "react"
+
+type Task = {
+  id: number
+  title: string
+  ngo?: { name: string } | string | null
+  date?: string | null
+  time?: string | null
+  location?: string | null
+  icon?: string | null
+  status?: string | null
+  createdAt?: string | null
+}
 
 export default function VolunteerDashboard() {
   const [loading, setLoading] = useState(true)
@@ -14,7 +27,36 @@ export default function VolunteerDashboard() {
     { label: 'Impact Points', value: '0', icon: Zap, color: 'text-amber-600' },
     { label: 'Badges Earned', value: '0', icon: Award, color: 'text-purple-600' },
   ])
-  const [upcomingTasks, setUpcomingTasks] = useState<any[]>([])
+  const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const getNgoName = (ngo: Task['ngo']): string => {
+    if (!ngo) return 'Unknown NGO'
+    if (typeof ngo === 'string') return ngo
+    if (typeof ngo === 'object' && 'name' in ngo) return ngo.name
+    return 'Unknown NGO'
+  }
+
+  const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return 'Date TBD'
+    try {
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const handleViewDetails = (task: Task) => {
+    setSelectedTask(task)
+    setIsDialogOpen(true)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -100,7 +142,7 @@ export default function VolunteerDashboard() {
                     <span className="text-3xl">{task.icon || '📌'}</span>
                     <div>
                       <h3 className="font-semibold">{task.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{task.ngo}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{getNgoName(task.ngo)}</p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         <span>{task.date}</span>
                         <span>{task.time}</span>
@@ -112,16 +154,101 @@ export default function VolunteerDashboard() {
                     </div>
                   </div>
                 </div>
-                <Link href={`/volunteer/tasks/${task.id}`}>
-                  <Button size="sm">
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleViewDetails(task)}
+                  variant="outline"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Task Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedTask && (
+            <>
+              <DialogHeader>
+                <div className="flex items-start gap-3">
+                  <span className="text-4xl">{selectedTask.icon || '📌'}</span>
+                  <div className="flex-1">
+                    <DialogTitle className="text-2xl">{selectedTask.title}</DialogTitle>
+                    <DialogDescription className="text-base mt-1">
+                      Organized by {getNgoName(selectedTask.ngo)}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Date & Time Section */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Schedule
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-7">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Date</p>
+                      <p className="font-medium">{formatDate(selectedTask.date)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Time</p>
+                      <p className="font-medium flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {selectedTask.time || 'Time TBD'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location Section */}
+                {selectedTask.location && (
+                  <div className="space-y-2 pl-7">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      Location
+                    </h3>
+                    <p className="text-muted-foreground">{selectedTask.location}</p>
+                  </div>
+                )}
+
+                {/* Task Status */}
+                {selectedTask.status && (
+                  <div className="space-y-2 pl-7">
+                    <h3 className="font-semibold">Status</h3>
+                    <p className="text-muted-foreground capitalize">{selectedTask.status}</p>
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                {selectedTask.createdAt && (
+                  <div className="space-y-2 pl-7 pt-2 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      Posted: {new Date(selectedTask.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Close
+                </Button>
+                <Link href="/volunteer/tasks">
+                  <Button>
+                    View All Tasks
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
