@@ -1,4 +1,4 @@
-## 🧱 Tech Stack – ReShare: Surplus Item Donation Platform
+##  Tech Stack – ReShare: Surplus Item Donation Platform
 
 ### Frontend
 - *Next.js (React Framework):* Builds a fast, scalable, and SEO-friendly user interface.  
