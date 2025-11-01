@@ -1,111 +1,56 @@
-# ReShare: Donation Management Platform
+## 🧱 Tech Stack – ReShare: Surplus Item Donation Platform
 
-ReShare is a full-stack system designed to connect donors, NGOs, and volunteers for redistribution of usable surplus items such as food, clothes, books, appliances, and more. It ensures transparent, verified, and trackable donation workflow to promote sustainability and support communities.
-
----
-
-# 1. Table of Contents
-- [2. Features](#2-features)
-- [3. Tech Stack](#3-tech-stack)
-- [4. Installation](#4-installation)
-- [5. Environment Variables](#5-environment-variables)
-- [6. Project Structure](#6-project-structure)
-
-  
+### Frontend
+- *Next.js (React Framework):* Builds a fast, scalable, and SEO-friendly user interface.  
+- *Tailwind CSS:* Provides a clean, responsive, and modern design system.  
+- *Framer Motion:* Adds smooth, interactive animations for better user experience.  
+- *React Google Maps API:* Displays nearby NGOs and donations with real-time map pins.  
+- *Lucide Icons / HeroIcons:* Ensures consistent and accessible iconography throughout the app.  
 
 ---
 
-# 2. Features
-
-## 2.1 Donor Features
-- Create donation requests (food, clothes, books, appliances, etc.)
-- Upload item images and details
-- Real-time donation tracking
-- Notification when NGO receives the donation
-- History of contributions
-
-## 2.2 NGO Features
-- Apply for verification with documentation
-- Browse and claim donation requests
-- Track accepted donations
-- Manage pickup and delivery status
-
-## 2.3 Volunteer Features
-- View delivery assignments
-- Accept delivery tasks
-- Update status (picked → in-transit → delivered)
-
-## 2.4 Admin Features
-- Approve/verify NGOs
-- Manage user roles and donations
-- Assign delivery tasks
-- Review and monitor system activity
-
-## 2.5 Core System Features
-- Firebase Authentication (Google + Email/Password)
-- Firestore with role-based security rules
-- Firebase Storage for images and docs
-- Google Maps for location and route assistance
-- Real-time listeners and updates
+### Backend & Database
+- *Firebase Authentication:* Handles secure user login and signup (Google + Email/Password).  
+- *Firebase Firestore:* Real-time NoSQL database to store users, NGOs, donations, and analytics.  
+- *Firebase Cloud Storage:* Used for uploading images, certificates, and digital receipts.  
+- *Firebase Cloud Functions:* Powers automation for NGO verification, email notifications, and PDF generation.  
+- *Firebase Hosting / Vercel:* Enables fast, scalable, and reliable deployment of the application.  
 
 ---
 
-# 3. Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js (React), Tailwind CSS |
-| Backend | Firebase Cloud Functions |
-| Database | Firebase Firestore |
-| Auth | Firebase Authentication |
-| Storage | Firebase Storage |
-| Maps | Google Maps JavaScript API |
-| Deployment | Vercel / Firebase Hosting |
+### APIs & Integrations
+- *Google Maps API:* Integrates live maps, distance calculation, and location-based discovery.  
+- *GeoFire / GeoQuery:* Supports efficient geolocation-based matching between donors and NGOs.  
+- *Email Notifications (via Cloud Functions):* Sends automated updates for registration, approvals, and donations.  
+- *PDFKit / jsPDF:* Generates digital donation receipts upon successful delivery.  
 
 ---
 
-# 4. Installation
+### Architecture
+- *Component-Based Modular Design:* Separates UI, logic, and Firestore integration for better maintainability.  
+- *Role-Based Access Control (RBAC):* Manages Donor, NGO, Volunteer, and Admin access securely.  
+- *Progressive Web App (PWA):* Allows basic functionality even in low-connectivity environments.  
+- *Real-Time Listeners:* Tracks donation lifecycle (Available → Claimed → Picked → Delivered).  
 
-## 4.1 Prerequisites
-- Node.js (LTS version)
-- Firebase CLI installed
-- Google Cloud account with Maps API enabled
+---
 
-## 4.2 Steps to Run Locally
+### Analytics & Visualization
+- *Firebase Analytics:* Monitors usage, engagement, and platform activity.  
+- *Chart.js / Recharts:* Visualizes sustainability metrics such as CO₂ saved, waste prevented, and people helped.  
+- *Impact Dashboard:* Displays real-time insights for Admins, NGOs, and Donors.  
 
-```bash
-git clone <repository-url>
-cd ReShare
-npm install
-npm run dev
-firebase deploy --only functions
-```
-# Firebase Config
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
+---
 
-# Google Maps API
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+### Development & Collaboration Tools
+- *Visual Studio Code:* Main IDE for development.  
+- *GitHub:* Version control and collaboration.  
+- *Figma:* UI/UX wireframing and design.  
+- *Postman:* API testing and validation.  
+- *ESLint + Prettier:* Maintains clean and consistent code style.  
 
-/
-├── app/<br>
-│   ├── donor/<br>
-│   ├── ngo/<br>
-│   ├── volunteer/<br>
-│   └── admin/<br>
-├── components/<br>
-├── firebase/<br>
-│   ├── config.js<br>
-│   ├── auth.js<br>
-│   └── firestore.js<br>
-├── functions/<br>
-│   └── index.js<br>
-└── public/<br>
+---
 
-
-
-
+### Deployment
+- *Frontend:* Deployed using Vercel for continuous integration and production hosting.  
+- *Backend:* Managed on Firebase (Functions, Firestore, Storage, Authentication).  
+- *Domain & SSL:* Configured via GitHub and Vercel integration for secure and seamless access.
